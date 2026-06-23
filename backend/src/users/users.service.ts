@@ -55,4 +55,16 @@ findOne(id: string) {
     data: { patrolId },
   });
 }
+  updateProgress(
+    id: string,
+    data: {
+      compassLevel?: number;
+      logbookLevel?: number;
+    },
+  ) {
+    return this.prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
 }

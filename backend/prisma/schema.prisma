@@ -17,6 +17,9 @@ model User {
   identityNumber  String   @unique
   joinDate        DateTime?
 
+  compassLevel Int @default(1)
+  logbookLevel Int @default(1)
+
   sectionId String?
   section   Section? @relation(fields: [sectionId], references: [id])
 
