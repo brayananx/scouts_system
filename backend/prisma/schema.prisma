@@ -15,11 +15,20 @@ model User {
 
   sectionId String?
   section   Section? @relation(fields: [sectionId], references: [id])
+  
+  patrolId String?
+  patrol   Patrol? @relation(fields: [patrolId], references: [id])
 }
 
 model Section {
   id   String @id @default(uuid())
   name String @unique
+
+  users User[]
+}
+model Patrol {
+  id    String @id @default(uuid())
+  name  String @unique
 
   users User[]
 }
