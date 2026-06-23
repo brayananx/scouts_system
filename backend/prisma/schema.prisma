@@ -8,16 +8,16 @@ datasource db {
 }
 
 model User {
-  id    String @id @default(uuid())
-  name  String
-  email String @unique
-  role  String @default("scout")
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  role      String   @default("scout")
 
   sectionId String?
   section   Section? @relation(fields: [sectionId], references: [id])
-  
-  patrolId String?
-  patrol   Patrol? @relation(fields: [patrolId], references: [id])
+
+  patrolId  String?
+  patrol    Patrol? @relation(fields: [patrolId], references: [id])
 }
 
 model Section {

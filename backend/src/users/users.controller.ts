@@ -19,4 +19,8 @@ export class UsersController {
   assignSection(@Body() body: { userId: string; sectionId: string }) {
     return this.usersService.assignSection(body.userId, body.sectionId);
   }
+  @Patch('assign-patrol')
+  assignPatrol(@Body() body: { userId: string; patrolId: string }) {
+    return this.usersService.assignPatrol(body.userId, body.patrolId);
+  }
 }

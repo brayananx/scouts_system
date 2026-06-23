@@ -19,4 +19,10 @@ export class UsersService {
     data: { sectionId },
   });
 }
+  assignPatrol(userId: string, patrolId: string) {
+  return this.prisma.user.update({
+    where: { id: userId },
+    data: { patrolId },
+  });
+}
 }
