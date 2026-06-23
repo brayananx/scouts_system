@@ -8,16 +8,34 @@ export default function Home() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   const loadSections = async () => {
-    const res = await fetch("http://localhost:3000/sections");
-    const data = await res.json();
-    setSections(data);
+    try {
+      const res = await fetch(`${API_URL}/sections`);
+      const data = await res.json();
+
+      console.log("SECTIONS:", data);
+
+      setSections(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error cargando secciones:", error);
+      setSections([]);
+    }
   };
 
   const loadUsers = async () => {
-    const res = await fetch("http://localhost:3000/users");
-    const data = await res.json();
-    setUsers(data);
+    try {
+      const res = await fetch(`${API_URL}/users`);
+      const data = await res.json();
+
+      console.log("USERS:", data);
+
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error cargando usuarios:", error);
+      setUsers([]);
+    }
   };
 
   useEffect(() => {
@@ -25,26 +43,36 @@ export default function Home() {
     loadUsers();
   }, []);
 
-  const createUser = async (e: any) => {
+  const createUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    await fetch("http://localhost:3000/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, role: "scout" }),
-    });
+    try {
+      await fetch(`${API_URL}/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          role: "scout",
+        }),
+      });
 
-    setName("");
-    setEmail("");
+      setName("");
+      setEmail("");
 
-    loadUsers();
-    loadSections();
+      loadUsers();
+      loadSections();
+    } catch (error) {
+      console.error("Error creando usuario:", error);
+    }
   };
 
   const getSectionName = (sectionId: string) => {
-  const section = sections.find((s: any) => s.id === sectionId);
-  return section ? section.name : "Sin tropa";
-};
+    const section = sections.find((s: any) => s.id === sectionId);
+    return section ? section.name : "Sin tropa";
+  };
 
   return (
     <main style={{ padding: 20 }}>
@@ -69,55 +97,68 @@ export default function Home() {
       </form>
 
       <h2>Usuarios</h2>
-      {users.map((u: any) => (
-  <div key={u.id} style={{ marginBottom: 10 }}>
-    👤 {u.name} ({u.email}) - {u.role}
 
-    <select
-      style={{ marginLeft: 10 }}
-      onChange={async (e) => {
-        const sectionId = e.target.value;
+      {Array.isArray(users) &&
+        users.map((u: any) => (
+          <div key={u.id} style={{ marginBottom: 10 }}>
+            👤 {u.name} ({u.email}) - {u.role}
 
-        if (!sectionId) return;
+            <select
+              style={{ marginLeft: 10 }}
+              onChange={async (e) => {
+                const sectionId = e.target.value;
 
-        await fetch("http://localhost:3000/users/assign-section", {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: u.id,
-            sectionId,
-          }),
-        });
+                if (!sectionId) return;
 
-        alert("Usuario asignado!");
+                try {
+                  await fetch(
+                    `${API_URL}/users/assign-section`,
+                    {
+                      method: "PATCH",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        userId: u.id,
+                        sectionId,
+                      }),
+                    }
+                  );
 
-        loadSections();
-        loadUsers();
-      }}
-    >
-      <option value="">Asignar tropa</option>
+                  alert("Usuario asignado!");
 
-      {sections.map((s: any) => (
-        <option key={s.id} value={s.id}>
-          {s.name}
-        </option>
-      ))}
-    </select>
-  </div>
-))}
+                  loadSections();
+                  loadUsers();
+                } catch (error) {
+                  console.error(error);
+                }
+              }}
+            >
+              <option value="">Asignar tropa</option>
+
+              {Array.isArray(sections) &&
+                sections.map((s: any) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        ))}
 
       <h2>Tropas</h2>
-      {sections.map((s: any) => (
-        <div key={s.id}>
-          <h3>🏕️ {s.name}</h3>
 
-          {s.users?.map((u: any) => (
-            <div key={u.id}>👤 {u.name}</div>
-          ))}
-        </div>
-      ))}
+      {Array.isArray(sections) &&
+        sections.map((s: any) => (
+          <div key={s.id}>
+            <h3>🏕️ {s.name}</h3>
+
+            {Array.isArray(s.users) &&
+              s.users.map((u: any) => (
+                <div key={u.id}>👤 {u.name}</div>
+              ))}
+          </div>
+        ))}
     </main>
   );
 }
