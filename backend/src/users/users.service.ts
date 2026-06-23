@@ -25,11 +25,16 @@ export class UsersService {
   });
 }
 
-  findAll() {
+findAll() {
   return this.prisma.user.findMany({
     include: {
       section: true,
       patrol: true,
+      specialties: {
+        include: {
+          specialty: true,
+        },
+      },
     },
   });
 }
@@ -39,6 +44,11 @@ findOne(id: string) {
     include: {
       patrol: true,
       section: true,
+      specialties: {
+        include: {
+          specialty: true,
+        },
+      },
     },
   });
 }

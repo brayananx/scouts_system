@@ -19,12 +19,32 @@ model User {
 
   compassLevel Int @default(1)
   logbookLevel Int @default(1)
+  specialties UserSpecialty[]
 
   sectionId String?
   section   Section? @relation(fields: [sectionId], references: [id])
 
   patrolId  String?
   patrol    Patrol? @relation(fields: [patrolId], references: [id])
+}
+model Specialty {
+  id    String @id @default(uuid())
+  name  String @unique
+
+  users UserSpecialty[]
+}
+
+model UserSpecialty {
+  id           String   @id @default(uuid())
+  obtainedDate DateTime?
+
+  userId      String
+  specialtyId String
+
+  user        User      @relation(fields: [userId], references: [id])
+  specialty   Specialty @relation(fields: [specialtyId], references: [id])
+
+  @@unique([userId, specialtyId])
 }
 
 model Section {
