@@ -89,6 +89,27 @@ removeProgress(progressId: string) {
     data: { sectionId },
   });
 }
+
+  async getHistoryData(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        patrol: true,
+
+        progress: {
+          orderBy: {
+            obtainedDate: "asc",
+          },
+        },
+
+        specialties: {
+          include: {
+            specialty: true,
+          },
+        },
+      },
+    });
+  }
   assignPatrol(userId: string, patrolId: string) {
   return this.prisma.user.update({
     where: { id: userId },
