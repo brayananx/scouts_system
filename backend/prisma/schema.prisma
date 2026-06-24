@@ -8,32 +8,34 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  role      String   @default("scout")
+  id    String @id @default(uuid())
+  name  String
+  email String @unique
+  role  String @default("scout")
 
-  birthDate       DateTime?
-  identityNumber  String   @unique
-  joinDate        DateTime?
+  birthDate      DateTime?
+  identityNumber String    @unique
+  joinDate       DateTime?
 
-  compassLevel Int @default(1)
-  logbookLevel Int @default(1)
-  progress UserProgress[]
-  specialties UserSpecialty[]
+  compassLevel Int             @default(1)
+  logbookLevel Int             @default(1)
+  progress     UserProgress[]
+  specialties  UserSpecialty[]
+
+  medicalRecord MedicalRecord?
 
   sectionId String?
   section   Section? @relation(fields: [sectionId], references: [id])
 
-  patrolId  String?
-  patrol    Patrol? @relation(fields: [patrolId], references: [id])
+  patrolId String?
+  patrol   Patrol? @relation(fields: [patrolId], references: [id])
 }
 
 model UserProgress {
-  id           String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   type         ProgressType
   level        Int
@@ -56,14 +58,14 @@ model Specialty {
 }
 
 model UserSpecialty {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   obtainedDate DateTime?
 
   userId      String
   specialtyId String
 
-  user        User      @relation(fields: [userId], references: [id])
-  specialty   Specialty @relation(fields: [specialtyId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+  specialty Specialty @relation(fields: [specialtyId], references: [id])
 
   @@unique([userId, specialtyId])
 }
@@ -74,9 +76,25 @@ model Section {
 
   users User[]
 }
+
 model Patrol {
-  id    String @id @default(uuid())
-  name  String @unique
+  id   String @id @default(uuid())
+  name String @unique
 
   users User[]
+}
+
+model MedicalRecord {
+  id                String  @id @default(uuid())
+  bloodType         String?
+  allergies         String?
+  medications       String?
+  medicalConditions String?
+  emergencyContact  String?
+  emergencyPhone    String?
+  guardianName      String?
+  notes             String?
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
 }
