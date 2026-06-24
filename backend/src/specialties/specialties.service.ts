@@ -5,11 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SpecialtiesService {
   constructor(private prisma: PrismaService) {}
 
-  create(name: string) {
-    return this.prisma.specialty.create({
-      data: { name },
-    });
-  }
+  create(name: string, imageKey: string) {
+  return this.prisma.specialty.create({
+    data: {
+      name,
+      imageKey,
+    },
+  });
+}
 
   findAll() {
     return this.prisma.specialty.findMany({

@@ -6,8 +6,8 @@ export class SpecialtiesController {
   constructor(private readonly specialtiesService: SpecialtiesService) {}
 
   @Post()
-  create(@Body('name') name: string) {
-    return this.specialtiesService.create(name);
+    create(@Body() body: { name: string; imageKey: string }) {
+    return this.specialtiesService.create(body.name, body.imageKey);
   }
 
   @Get()

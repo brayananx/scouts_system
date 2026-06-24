@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { UsersService } from './users.service';
 
 
@@ -28,6 +28,23 @@ export class UsersController {
   assignPatrol(@Body() body: { userId: string; patrolId: string }) {
     return this.usersService.assignPatrol(body.userId, body.patrolId);
   }
+  @Post(':id/progress-history')
+    addProgress(
+      @Param('id') id: string,
+      @Body()
+      body: {
+        type: 'COMPASS' | 'LOGBOOK';
+        level: number;
+        obtainedDate: string;
+      },
+    ) {
+      return this.usersService.addProgress(id, body);
+    }
+
+  @Delete('progress-history/:progressId')
+    removeProgress(@Param('progressId') progressId: string) {
+      return this.usersService.removeProgress(progressId);
+    }
 
   @Patch(':id/progress')
   updateProgress(

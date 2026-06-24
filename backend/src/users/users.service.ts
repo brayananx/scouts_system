@@ -49,7 +49,37 @@ findOne(id: string) {
           specialty: true,
         },
       },
+      progress: {
+        orderBy: [
+          { type: 'asc' },
+          { level: 'asc' },
+        ],
+      },
     },
+  });
+}
+
+addProgress(
+  id: string,
+  data: {
+    type: 'COMPASS' | 'LOGBOOK';
+    level: number;
+    obtainedDate: string;
+  },
+) {
+  return this.prisma.userProgress.create({
+    data: {
+      userId: id,
+      type: data.type,
+      level: Number(data.level),
+      obtainedDate: new Date(data.obtainedDate),
+    },
+  });
+}
+
+removeProgress(progressId: string) {
+  return this.prisma.userProgress.delete({
+    where: { id: progressId },
   });
 }
 
