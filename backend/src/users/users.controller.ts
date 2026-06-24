@@ -313,6 +313,14 @@ export class UsersController {
       doc.end();
     }
 
+    @Patch(':id/status')
+    updateStatus(
+      @Param('id') id: string,
+      @Body() body: { isActive: boolean; inactiveReason?: string },
+    ) {
+      return this.usersService.updateStatus(id, body);
+    }
+
   @Patch(':id/progress')
   updateProgress(
     @Param('id') id: string,

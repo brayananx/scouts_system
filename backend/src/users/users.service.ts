@@ -116,6 +116,26 @@ removeProgress(progressId: string) {
     data: { patrolId },
   });
 }
+
+updateStatus(
+    id: string,
+    data: {
+      isActive: boolean;
+      inactiveReason?: string;
+    },
+  ) {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        isActive: data.isActive,
+        inactiveReason: data.isActive ? null : data.inactiveReason,
+        inactiveDate: data.isActive ? null : new Date(),
+
+        // Si queda inactivo, sale de la patrulla
+        patrolId: data.isActive ? undefined : null,
+      },
+    });
+  }
   updateProgress(
     id: string,
     data: {

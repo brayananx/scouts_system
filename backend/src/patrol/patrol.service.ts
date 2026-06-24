@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -8,6 +8,21 @@ export class PatrolService {
   create(name: string) {
     return this.prisma.patrol.create({
       data: { name },
+    });
+  }
+  async remove(id: string) {
+    const usersCount = await this.prisma.user.count({
+      where: { patrolId: id },
+    });
+
+    if (usersCount > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar esta patrulla porque tiene usuarios asignados.',
+      );
+    }
+
+    return this.prisma.patrol.delete({
+      where: { id },
     });
   }
 

@@ -17,10 +17,16 @@ model User {
   identityNumber String    @unique
   joinDate       DateTime?
 
+  attendance Attendance[]
+
   compassLevel Int             @default(1)
   logbookLevel Int             @default(1)
   progress     UserProgress[]
   specialties  UserSpecialty[]
+
+  isActive Boolean @default(true)
+  inactiveReason String?
+  inactiveDate DateTime?
 
   medicalRecord MedicalRecord?
 
@@ -97,4 +103,27 @@ model MedicalRecord {
 
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
+}
+
+model Activity {
+  id          String   @id @default(uuid())
+  name        String
+  date        DateTime
+  description String?
+
+  attendance Attendance[]
+}
+
+model Attendance {
+  id         String @id @default(uuid())
+
+  activityId String
+  userId     String
+
+  activity Activity @relation(fields: [activityId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  present Boolean @default(false)
+
+  @@unique([activityId, userId])
 }
