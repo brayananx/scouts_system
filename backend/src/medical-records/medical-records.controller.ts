@@ -4,6 +4,7 @@ import type { Response } from 'express';
 import PDFDocument from 'pdfkit';
 import path from 'path';
 import fs from 'fs';
+import { Public } from '../auth/public.decorator';
 
 @Controller('medical-records')
 export class MedicalRecordsController {
@@ -13,6 +14,7 @@ export class MedicalRecordsController {
   findOne(@Param('userId') userId: string) {
     return this.medicalRecordsService.findOne(userId);
   }
+  @Public()
   @Get(':userId/pdf')
     async getMedicalPdf(@Param('userId') userId: string, @Res() res: Response) {
       const user = await this.medicalRecordsService.getUserMedicalData(userId);

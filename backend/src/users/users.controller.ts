@@ -15,6 +15,7 @@ import path from 'path';
 import fs from 'fs';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
@@ -68,7 +69,7 @@ export class UsersController {
   getHistory(@Param('id') id: string) {
     return this.usersService.getHistoryData(id);
   }
-
+  @Public()
   @Get(':id/history-pdf')
     async getHistoryPdf(@Param('id') id: string, @Res() res: Response) {
       const user = await this.usersService.getHistoryData(id);
