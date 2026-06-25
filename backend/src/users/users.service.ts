@@ -124,7 +124,7 @@ async remove(id: string) {
         where: { userId: id },
       });
 
-      await tx.progressHistory.deleteMany({
+      await tx.userProgress.deleteMany({
         where: { userId: id },
       });
 
