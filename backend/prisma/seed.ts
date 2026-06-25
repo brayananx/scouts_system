@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
@@ -35,6 +36,21 @@ async function main() {
   }
 
   console.log(`✅ ${files.length} especialidades cargadas correctamente`);
+
+  const password = await bcrypt.hash("admin123", 10);
+
+  await prisma.systemUser.upsert({
+    where: { email: "admin@coquiva.com" },
+    update: {},
+    create: {
+      name: "Administrador",
+      email: "admin@coquiva.com",
+      password,
+      role: "ADMIN",
+    },
+  });
+
+  console.log("✅ Usuario admin creado");
 }
 
 main()

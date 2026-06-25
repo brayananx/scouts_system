@@ -5,9 +5,22 @@ import { PrismaService } from '../prisma/prisma.service';
 export class MedicalRecordsService {
   constructor(private prisma: PrismaService) {}
 
-  findOne(userId: string) {
-    return this.prisma.medicalRecord.findUnique({
-      where: { userId },
+  async findOne(userId: string) {
+    const record = await this.prisma.medicalRecord.findUnique({
+      where: {
+        userId,
+      },
+    });
+
+    return record || {};
+  }
+  getUserMedicalData(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        patrol: true,
+        medicalRecord: true,
+      },
     });
   }
 

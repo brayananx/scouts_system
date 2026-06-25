@@ -2,6 +2,9 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import AppHeader from "../../components/AppHeader";
+import { api } from "../../lib/api";
+
 
 export default function AttendanceDetailPage({
   params,
@@ -15,9 +18,8 @@ export default function AttendanceDetailPage({
   const [users, setUsers] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
 
-  const loadActivity = async () => {
-    const res = await fetch(`${API_URL}/attendance/activities/${id}`);
-    const data = await res.json();
+    const loadActivity = async () => {
+    const data = await api(`/attendance/activities/${id}`);
 
     setActivity(data.activity);
     setUsers(Array.isArray(data.users) ? data.users : []);
@@ -33,9 +35,8 @@ export default function AttendanceDetailPage({
   };
 
   const markAttendance = async (userId: string, present: boolean) => {
-    await fetch(`${API_URL}/attendance/mark`, {
+    await api("/attendance/mark", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         activityId: id,
         userId,
@@ -63,6 +64,8 @@ export default function AttendanceDetailPage({
   const presentCount = activeAttendance.filter((a: any) => a.present).length;
 
   return (
+    <>
+    <AppHeader/>
     <main className="min-h-screen bg-slate-100 p-8 text-slate-900">
       <div className="mx-auto max-w-6xl">
         <Link
@@ -173,5 +176,6 @@ export default function AttendanceDetailPage({
         </section>
       </div>
     </main>
+    </>
   );
 }

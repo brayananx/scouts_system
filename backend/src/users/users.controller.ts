@@ -13,7 +13,10 @@ import type { Response } from 'express';
 import PDFDocument from 'pdfkit';
 import path from 'path';
 import fs from 'fs';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -309,7 +312,48 @@ export class UsersController {
           doc.y = y + 35;
         });
       }
+      drawSectionTitle('Ficha Médica');
 
+        const medical = user.medicalRecord;
+
+        if (!medical) {
+          doc
+            .fontSize(10)
+            .fillColor('#6b7280')
+            .text('No hay ficha médica registrada.', 55);
+
+          doc.fillColor('#111827');
+        } else {
+          const drawMedicalRow = (label: string, value?: string | null) => {
+            checkPageSpace(35);
+
+            const y = doc.y;
+
+            doc
+              .fontSize(10)
+              .fillColor('#065f46')
+              .text(label, 55, y, { width: 150 });
+
+            doc
+              .fontSize(10)
+              .fillColor('#374151')
+              .text(value || 'No registrado', 210, y, {
+                width: 320,
+                lineGap: 2,
+              });
+
+            doc.y = y + 28;
+          };
+
+          drawMedicalRow('Tipo de sangre', medical.bloodType);
+          drawMedicalRow('Encargado', medical.guardianName);
+          drawMedicalRow('Contacto emergencia', medical.emergencyContact);
+          drawMedicalRow('Teléfono emergencia', medical.emergencyPhone);
+          drawMedicalRow('Alergias', medical.allergies);
+          drawMedicalRow('Medicamentos', medical.medications);
+          drawMedicalRow('Condiciones médicas', medical.medicalConditions);
+          drawMedicalRow('Observaciones', medical.notes);
+        }
       doc.end();
     }
 
@@ -319,6 +363,13 @@ export class UsersController {
       @Body() body: { isActive: boolean; inactiveReason?: string },
     ) {
       return this.usersService.updateStatus(id, body);
+    }
+    @Patch(':id/ceremony')
+    updateScoutCeremony(
+      @Param('id') id: string,
+      @Body() body: { isInvested?: boolean; promiseDate?: string | null },
+    ) {
+      return this.usersService.updateScoutCeremony(id, body);
     }
 
   @Patch(':id/progress')

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import AppHeader from "../components/AppHeader";
+import { api } from "../lib/api";
 
 export default function AttendancePage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -13,8 +15,7 @@ export default function AttendancePage() {
   const [description, setDescription] = useState("");
 
   const loadActivities = async () => {
-    const res = await fetch(`${API_URL}/attendance/activities`);
-    const data = await res.json();
+    const data = await api("/attendance/activities");
 
     setActivities(Array.isArray(data) ? data : []);
   };
@@ -28,7 +29,7 @@ export default function AttendancePage() {
 
     if (!name || !date) return;
 
-    await fetch(`${API_URL}/attendance/activities`, {
+    await api("/attendance/activities", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -48,6 +49,9 @@ export default function AttendancePage() {
   };
 
   return (
+  <>
+    <AppHeader />
+
     <main className="min-h-screen bg-slate-100 p-8 text-slate-900">
       <div className="mx-auto max-w-6xl">
         <Link
@@ -121,5 +125,6 @@ export default function AttendancePage() {
         </section>
       </div>
     </main>
+    </>
   );
 }

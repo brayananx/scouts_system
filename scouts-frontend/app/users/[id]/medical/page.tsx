@@ -2,6 +2,8 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import AppHeader from "../../../components/AppHeader";
+import { api } from "../../../lib/api";
 
 export default function MedicalPage({
   params,
@@ -22,8 +24,7 @@ export default function MedicalPage({
   const [savedMessage, setSavedMessage] = useState("");
 
   const loadMedicalRecord = async () => {
-    const res = await fetch(`${API_URL}/medical-records/${id}`);
-    const data = await res.json();
+  const data = await api(`/medical-records/${id}`);
 
     if (!data) return;
 
@@ -38,15 +39,14 @@ export default function MedicalPage({
   };
 
   useEffect(() => {
-    loadMedicalRecord();
-  }, [id, API_URL]);
+      loadMedicalRecord();
+    }, [id, API_URL]);
 
   const saveMedicalRecord = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    await fetch(`${API_URL}/medical-records/${id}`, {
+    await api(`/medical-records/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         bloodType,
         allergies,
@@ -63,6 +63,8 @@ export default function MedicalPage({
   };
 
   return (
+    <>
+      <AppHeader />
     <main className="min-h-screen bg-slate-100 p-8 text-slate-900">
       <div className="mx-auto max-w-5xl">
         <Link
@@ -71,6 +73,14 @@ export default function MedicalPage({
         >
           ← Volver al perfil
         </Link>
+
+        <a
+          href={`${API_URL}/medical-records/${id}/pdf`}
+          target="_blank"
+          className="ml-3 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+        >
+          📄 Descargar ficha médica
+        </a>
 
         <section className="mt-6 rounded-2xl bg-white p-8 shadow-sm">
           <h1 className="text-3xl font-bold">🩺 Ficha Médica</h1>
@@ -222,5 +232,6 @@ export default function MedicalPage({
         </section>
       </div>
     </main>
+    </>
   );
 }

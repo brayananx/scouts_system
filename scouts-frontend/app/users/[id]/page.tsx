@@ -2,7 +2,8 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-
+import AppHeader from "../../components/AppHeader";
+import { api } from "../../lib/api";
 
 export default function UserProfile({
   params,
@@ -14,9 +15,14 @@ export default function UserProfile({
 
   const [user, setUser] = useState<any>(null);
 
+  const [isInvested, setIsInvested] = useState(false);
+  const [promiseDate, setPromiseDate] = useState("");
+
+
   const [inactiveReason, setInactiveReason] = useState("");
   const [patrols, setPatrols] = useState<any[]>([]);
-  const [selectedPatrolId, setSelectedPatrolId] = useState(""); 
+  const [selectedPatrolId, setSelectedPatrolId] = useState("");
+
 
   const [progressType, setProgressType] = useState<"COMPASS" | "LOGBOOK">(
     "COMPASS"
@@ -29,35 +35,39 @@ export default function UserProfile({
   const [specialtyDate, setSpecialtyDate] = useState("");
 
   const loadUser = async () => {
-    const res = await fetch(`${API_URL}/users/${id}`);
+  const data = await api(`/users/${id}`);
 
-    if (!res.ok) {
-      console.error("Error cargando usuario:", res.status);
-      return;
-    }
+  setUser(data);
+  setInactiveReason(data.inactiveReason || "");
+  setSelectedPatrolId(data.patrolId || "");
+  setIsInvested(data.isInvested || false);
+  setPromiseDate(
+    data.promiseDate
+      ? new Date(data.promiseDate).toISOString().split("T")[0]
+      : ""
+  );
+};
 
-    const data = await res.json();
-    setUser(data);
-    setInactiveReason(data.inactiveReason || "");
-    setSelectedPatrolId(data.patrolId || "");
-  };
   const loadPatrols = async () => {
-      const res = await fetch(`${API_URL}/patrols`);
-      const data = await res.json();
-
-      setPatrols(Array.isArray(data) ? data : []);
-    };
+    const res = await api("/patrols");
+    setPatrols(Array.isArray(res) ? res : []);
+  };
 
   const loadSpecialties = async () => {
-    const res = await fetch(`${API_URL}/specialties`);
-    const data = await res.json();
-
-    setSpecialties(Array.isArray(data) ? data : []);
+    const res = await api("/specialties");
+    setSpecialties(Array.isArray(res) ? res : []);
   };
+
+  useEffect(() => {
+    loadUser();
+    loadSpecialties();
+    loadPatrols();
+  }, [id, API_URL]);
+
   const updatePatrol = async () => {
     if (!selectedPatrolId) return;
 
-    await fetch(`${API_URL}/users/assign-patrol`, {
+    await api("/users/assign-patrol", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -69,18 +79,12 @@ export default function UserProfile({
     loadUser();
   };
 
-  useEffect(() => {
-    loadUser();
-    loadSpecialties();
-    loadPatrols();
-  }, [id, API_URL]);
-
   const addProgress = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!progressDate) return;
 
-    await fetch(`${API_URL}/users/${id}/progress-history`, {
+    await api(`/users/${id}/progress-history`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -98,7 +102,7 @@ export default function UserProfile({
   };
 
   const removeProgress = async (progressId: string) => {
-    await fetch(`${API_URL}/users/progress-history/${progressId}`, {
+    await api(`/users/progress-history/${progressId}`, {
       method: "DELETE",
     });
 
@@ -110,7 +114,7 @@ export default function UserProfile({
 
     if (!selectedSpecialty || !specialtyDate) return;
 
-    await fetch(`${API_URL}/specialties/assign`, {
+    await api("/specialties/assign", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -129,7 +133,7 @@ export default function UserProfile({
   };
 
   const removeSpecialty = async (userSpecialtyId: string) => {
-    await fetch(`${API_URL}/specialties/user-specialty/${userSpecialtyId}`, {
+    await api(`/specialties/user-specialty/${userSpecialtyId}`, {
       method: "DELETE",
     });
 
@@ -137,17 +141,77 @@ export default function UserProfile({
   };
 
   const updateUserStatus = async (isActive: boolean) => {
-      await fetch(`${API_URL}/users/${id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          isActive,
-          inactiveReason: isActive ? undefined : inactiveReason,
-        }),
-      });
+    await api(`/users/${id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        isActive,
+        inactiveReason: isActive ? undefined : inactiveReason,
+      }),
+    });
 
-      loadUser();
+    loadUser();
+  };
+
+  const saveCeremonyData = async () => {
+    await api(`/users/${id}/ceremony`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        isInvested,
+        promiseDate: promiseDate || null,
+      }),
+    });
+
+    loadUser();
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString();
+  };
+
+  const calculateAge = (birthDate: string) => {
+    const birth = new Date(birthDate);
+    const today = new Date();
+
+    let years = today.getFullYear() - birth.getFullYear();
+    let months = today.getMonth() - birth.getMonth();
+
+    if (today.getDate() < birth.getDate()) {
+      months--;
+    }
+
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+
+    return `${years} años y ${months} meses`;
+  };
+
+  const getCompassName = (level: number) => {
+    const names: Record<number, string> = {
+      1: "Bronce",
+      2: "Plata",
+      3: "Oro",
+      4: "Platino",
     };
+
+    return names[level] || `Brújula ${level}`;
+  };
+
+  const getLogbookName = (level: number) => {
+    const names: Record<number, string> = {
+      1: "Aventurero",
+      2: "Intrépido",
+      3: "Pionero",
+      4: "Explorador",
+    };
+
+    return names[level] || `Bitácora ${level}`;
+  };
 
   if (!user) {
     return (
@@ -162,119 +226,121 @@ export default function UserProfile({
 
   const logbookProgress =
     user.progress?.filter((item: any) => item.type === "LOGBOOK") || [];
-    const scoutHistory = [
+
+  const scoutHistory = [
     ...(user.progress || []).map((item: any) => ({
-        id: item.id,
-        date: item.obtainedDate,
-        title:
+      id: item.id,
+      date: item.obtainedDate,
+      title:
         item.type === "COMPASS"
-            ? `Obtuvo Brújula ${item.level}`
-            : `Obtuvo Bitácora ${item.level}`,
-        icon: item.type === "COMPASS" ? "🧭" : "📖",
+          ? `Obtuvo Brújula ${getCompassName(item.level)}`
+          : `Obtuvo Bitácora ${getLogbookName(item.level)}`,
+      icon: item.type === "COMPASS" ? "🧭" : "📖",
     })),
 
     ...(user.specialties || []).map((item: any) => ({
-        id: item.id,
-        date: item.obtainedDate,
-        title: `Obtuvo la especialidad ${item.specialty.name}`,
-        icon: "🏅",
+      id: item.id,
+      date: item.obtainedDate,
+      title: `Obtuvo la especialidad ${item.specialty.name}`,
+      icon: "🏅",
     })),
-    ].sort(
+  ].sort(
     (a: any, b: any) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString();
-  };
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
 
   return (
+    <>
+    <AppHeader />
     <main className="min-h-screen bg-slate-100 p-8 text-slate-900">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-wrap gap-3">
-  <Link
-    href="/"
-    className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-  >
-    ← Volver
-  </Link>
+          <Link
+            href="/"
+            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+          >
+            ← Volver
+          </Link>
 
-  <Link
-    href={`/users/${id}/medical`}
-    className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-  >
-    🩺 Ficha Médica
-  </Link>
+          <Link
+            href={`/users/${id}/medical`}
+            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+          >
+            🩺 Ficha Médica
+          </Link>
 
-  <a
-    href={`${API_URL}/users/${id}/history-pdf`}
-    target="_blank"
-    className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
-  >
-    📄 Descargar PDF
-  </a>
-</div>
+          <a
+            href={`${API_URL}/users/${id}/history-pdf`}
+            target="_blank"
+            className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+          >
+            📄 Descargar PDF
+          </a>
+        </div>
 
         <section className="rounded-2xl bg-white p-8 shadow-sm">
           <h1 className="text-3xl font-bold">👤 {user.name}</h1>
+
           <div className="mt-4 rounded-2xl border border-slate-200 p-5">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-sm text-slate-500">Estado del scout</p>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Estado del scout</p>
 
-                  <p
-                    className={`mt-1 text-lg font-bold ${
-                      user.isActive === false ? "text-red-700" : "text-emerald-700"
-                    }`}
-                  >
-                    {user.isActive === false ? "Inactivo" : "Activo"}
+                <p
+                  className={`mt-1 text-lg font-bold ${
+                    user.isActive === false
+                      ? "text-red-700"
+                      : "text-emerald-700"
+                  }`}
+                >
+                  {user.isActive === false ? "Inactivo" : "Activo"}
+                </p>
+
+                {user.inactiveDate && (
+                  <p className="text-sm text-slate-500">
+                    Fecha de inactividad: {formatDate(user.inactiveDate)}
                   </p>
-
-                  {user.inactiveDate && (
-                    <p className="text-sm text-slate-500">
-                      Fecha de inactividad: {formatDate(user.inactiveDate)}
-                    </p>
-                  )}
-                </div>
-
-                {user.isActive === false ? (
-                  <button
-                    onClick={() => updateUserStatus(true)}
-                    className="rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
-                  >
-                    Reactivar scout
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => updateUserStatus(false)}
-                    className="rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700"
-                  >
-                    Marcar inactivo
-                  </button>
                 )}
               </div>
 
-              {user.isActive !== false && (
-                <div className="mt-4">
-                  <label className="mb-1 block text-sm font-medium text-slate-600">
-                    Razón de inactividad
-                  </label>
-
-                  <textarea
-                    value={inactiveReason}
-                    onChange={(e) => setInactiveReason(e.target.value)}
-                    placeholder="Ej: Se trasladó de grupo, dejó de asistir, cambio de residencia..."
-                    className="min-h-24 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-red-600"
-                  />
-                </div>
-              )}
-
-              {user.isActive === false && user.inactiveReason && (
-                <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">
-                  <strong>Razón:</strong> {user.inactiveReason}
-                </div>
+              {user.isActive === false ? (
+                <button
+                  onClick={() => updateUserStatus(true)}
+                  className="rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
+                >
+                  Reactivar scout
+                </button>
+              ) : (
+                <button
+                  onClick={() => updateUserStatus(false)}
+                  className="rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700"
+                >
+                  Marcar inactivo
+                </button>
               )}
             </div>
+
+            {user.isActive !== false && (
+              <div className="mt-4">
+                <label className="mb-1 block text-sm font-medium text-slate-600">
+                  Razón de inactividad
+                </label>
+
+                <textarea
+                  value={inactiveReason}
+                  onChange={(e) => setInactiveReason(e.target.value)}
+                  placeholder="Ej: Se trasladó de grupo, dejó de asistir, cambio de residencia..."
+                  className="min-h-24 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-red-600"
+                />
+              </div>
+            )}
+
+            {user.isActive === false && user.inactiveReason && (
+              <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">
+                <strong>Razón:</strong> {user.inactiveReason}
+              </div>
+            )}
+          </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="rounded-xl bg-slate-100 p-4">
@@ -295,11 +361,72 @@ export default function UserProfile({
             </div>
 
             <div className="rounded-xl bg-slate-100 p-4">
+              <p className="text-sm text-slate-500">Edad</p>
+              <p className="font-semibold">
+                {user.birthDate ? calculateAge(user.birthDate) : "-"}
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-slate-100 p-4">
               <p className="text-sm text-slate-500">Fecha ingreso</p>
               <p className="font-semibold">
                 {user.joinDate ? formatDate(user.joinDate) : "-"}
               </p>
             </div>
+
+            <div className="rounded-xl bg-slate-100 p-4">
+              <p className="text-sm text-slate-500">Investidura</p>
+
+              <div className="mt-2 flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={isInvested}
+                  onChange={async (e) => {
+                    const checked = e.target.checked;
+                    setIsInvested(checked);
+
+                    await api(`/users/${id}/ceremony`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        isInvested: checked,
+                        promiseDate: checked ? promiseDate || null : null,
+                      }),
+                    });
+
+                    loadUser();
+                  }}
+                  className="h-5 w-5"
+                />
+
+                <span className="font-semibold">
+                  {isInvested ? "Investido" : "Pendiente"}
+                </span>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-slate-100 p-4">
+              <p className="text-sm text-slate-500">Promesa Scout</p>
+
+              {isInvested ? (
+                <input
+                  type="date"
+                  value={promiseDate}
+                  onChange={(e) => setPromiseDate(e.target.value)}
+                  className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
+                />
+              ) : (
+                <p className="mt-2 text-sm text-slate-500">
+                  Requiere investidura
+                </p>
+              )}
+            </div>
+            <button
+              onClick={saveCeremonyData}
+              className="mt-4 rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white hover:bg-emerald-800"
+            >
+              Guardar promesa
+            </button>
 
             <div className="rounded-xl bg-emerald-100 p-4 md:col-span-2">
               <p className="text-sm text-emerald-700">Patrulla actual</p>
@@ -348,9 +475,10 @@ export default function UserProfile({
                 </label>
                 <select
                   value={progressType}
-                  onChange={(e) =>
-                    setProgressType(e.target.value as "COMPASS" | "LOGBOOK")
-                  }
+                  onChange={(e) => {
+                    setProgressType(e.target.value as "COMPASS" | "LOGBOOK");
+                    setProgressLevel("1");
+                  }}
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600"
                 >
                   <option value="COMPASS">Brújula</option>
@@ -367,10 +495,13 @@ export default function UserProfile({
                   onChange={(e) => setProgressLevel(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600"
                 >
-                  <option value="1">Nivel 1</option>
-                  <option value="2">Nivel 2</option>
-                  <option value="3">Nivel 3</option>
-                  <option value="4">Nivel 4</option>
+                  {[1, 2, 3, 4].map((level) => (
+                    <option key={level} value={level}>
+                      {progressType === "COMPASS"
+                        ? getCompassName(level)
+                        : getLogbookName(level)}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -414,11 +545,13 @@ export default function UserProfile({
                     >
                       <img
                         src={`/brujulas/brujula-${item.level}.png`}
-                        alt={`Brújula ${item.level}`}
+                        alt={`Brújula ${getCompassName(item.level)}`}
                         className="mx-auto h-32 w-32 object-contain"
                       />
 
-                      <p className="mt-3 font-bold">Brújula {item.level}</p>
+                      <p className="mt-3 font-bold">
+                        Brújula {getCompassName(item.level)}
+                      </p>
                       <p className="text-sm text-slate-500">
                         {formatDate(item.obtainedDate)}
                       </p>
@@ -451,11 +584,13 @@ export default function UserProfile({
                     >
                       <img
                         src={`/bitacoras/bitacora-${item.level}.png`}
-                        alt={`Bitácora ${item.level}`}
+                        alt={`Bitácora ${getLogbookName(item.level)}`}
                         className="mx-auto h-32 w-32 object-contain"
                       />
 
-                      <p className="mt-3 font-bold">Bitácora {item.level}</p>
+                      <p className="mt-3 font-bold">
+                        Bitácora {getLogbookName(item.level)}
+                      </p>
                       <p className="text-sm text-slate-500">
                         {formatDate(item.obtainedDate)}
                       </p>
@@ -557,38 +692,42 @@ export default function UserProfile({
               ))}
             </div>
           </div>
+
           <div className="mt-8 border-t border-slate-200 pt-8">
             <h2 className="text-2xl font-bold">📜 Historial Scout</h2>
             <p className="mt-1 text-sm text-slate-500">
-                Línea de tiempo automática del progreso del scout.
+              Línea de tiempo automática del progreso del scout.
             </p>
 
             <div className="mt-6 space-y-4">
-                {scoutHistory.length === 0 && (
+              {scoutHistory.length === 0 && (
                 <p className="rounded-xl bg-slate-100 p-4 text-sm text-slate-500">
-                    No hay historial registrado todavía.
+                  No hay historial registrado todavía.
                 </p>
-                )}
+              )}
 
-                {scoutHistory.map((item: any) => (
+              {scoutHistory.map((item: any) => (
                 <div
-                    key={`${item.icon}-${item.id}`}
-                    className="flex gap-4 rounded-2xl border border-slate-200 p-4"
+                  key={`${item.icon}-${item.id}`}
+                  className="flex gap-4 rounded-2xl border border-slate-200 p-4"
                 >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-xl">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-xl">
                     {item.icon}
-                    </div>
+                  </div>
 
-                    <div>
+                  <div>
                     <p className="font-semibold">{item.title}</p>
-                    <p className="text-sm text-slate-500">{formatDate(item.date)}</p>
-                    </div>
+                    <p className="text-sm text-slate-500">
+                      {formatDate(item.date)}
+                    </p>
+                  </div>
                 </div>
-                ))}
+              ))}
             </div>
-            </div>
+          </div>
         </section>
       </div>
     </main>
+    </>
   );
 }

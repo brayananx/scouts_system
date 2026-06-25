@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import AppHeader from "./components/AppHeader";
+import { api } from "./lib/api";
 
 export default function Home() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const router = useRouter();
 
   const [sections, setSections] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -12,6 +16,7 @@ export default function Home() {
 
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isPatrolModalOpen, setIsPatrolModalOpen] = useState(false);
+  const [isNewMenuOpen, setIsNewMenuOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -23,36 +28,39 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const loadSections = async () => {
-    try {
-      const res = await fetch(`${API_URL}/sections`);
-      const data = await res.json();
-      setSections(Array.isArray(data) ? data : []);
-    } catch {
-      setSections([]);
-    }
-  };
+  try {
+    const data = await api("/sections");
+    setSections(Array.isArray(data) ? data : []);
+  } catch {
+    setSections([]);
+  }
+};
 
-  const loadUsers = async () => {
-    try {
-      const res = await fetch(`${API_URL}/users`);
-      const data = await res.json();
-      setUsers(Array.isArray(data) ? data : []);
-    } catch {
-      setUsers([]);
-    }
-  };
+const loadUsers = async () => {
+  try {
+    const data = await api("/users");
+    setUsers(Array.isArray(data) ? data : []);
+  } catch {
+    setUsers([]);
+  }
+};
 
-  const loadPatrols = async () => {
-    try {
-      const res = await fetch(`${API_URL}/patrols`);
-      const data = await res.json();
-      setPatrols(Array.isArray(data) ? data : []);
-    } catch {
-      setPatrols([]);
-    }
-  };
+const loadPatrols = async () => {
+  try {
+    const data = await api("/patrols");
+    setPatrols(Array.isArray(data) ? data : []);
+  } catch {
+    setPatrols([]);
+  }
+};
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+      if (!token) {
+        router.push("/login");
+        return;
+      }
     loadSections();
     loadUsers();
     loadPatrols();
@@ -63,7 +71,7 @@ export default function Home() {
 
     if (!name.trim() || !email.trim() || !identityNumber.trim()) return;
 
-    await fetch(`${API_URL}/users`, {
+    await api("/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -92,7 +100,7 @@ export default function Home() {
 
     if (!patrolName.trim()) return;
 
-    await fetch(`${API_URL}/patrols`, {
+    await api("/patrols", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: patrolName }),
@@ -106,7 +114,7 @@ export default function Home() {
   const assignPatrol = async (userId: string, patrolId: string) => {
     if (!patrolId) return;
 
-    await fetch(`${API_URL}/users/assign-patrol`, {
+    await api("/users/assign-patrol", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, patrolId }),
@@ -121,7 +129,7 @@ export default function Home() {
 
     if (!confirmDelete) return;
 
-    const res = await fetch(`${API_URL}/patrols/${id}`, {
+    const res = await api(`/patrols/${id}`, {
       method: "DELETE",
     });
 
@@ -149,43 +157,90 @@ export default function Home() {
   const activeUsers = filteredUsers.filter((u: any) => u.isActive !== false);
   const inactiveUsers = filteredUsers.filter((u: any) => u.isActive === false);
 
+  const getAgeYears = (birthDate: string) => {
+  const birth = new Date(birthDate);
+  const today = new Date();
+
+  let years = today.getFullYear() - birth.getFullYear();
+
+  const hasHadBirthdayThisYear =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() &&
+      today.getDate() >= birth.getDate());
+
+  if (!hasHadBirthdayThisYear) {
+    years--;
+  }
+
+  return years;
+};
+
+const getRequiredLogbookByAge = (age: number) => {
+  if (age >= 14) return { level: 4, name: "Explorador" };
+  if (age >= 13) return { level: 3, name: "Pionero" };
+  if (age >= 12) return { level: 2, name: "Intrépido" };
+  if (age >= 11) return { level: 1, name: "Aventurero" };
+
+  return null;
+};
+
+const reminders = activeUsers
+  .map((user: any) => {
+    // PRIORIDAD 1: Investidura
+    if (!user.isInvested) {
+      return {
+        id: user.id,
+        name: user.name,
+        type: "INVESTITURE",
+        message: "Pendiente investidura",
+      };
+    }
+
+    // PRIORIDAD 2: Promesa
+    if (!user.promiseDate) {
+      return {
+        id: user.id,
+        name: user.name,
+        type: "PROMISE",
+        message: "Pendiente promesa scout",
+      };
+    }
+
+    // PRIORIDAD 3: Bitácoras
+    if (!user.birthDate) return null;
+
+    const age = getAgeYears(user.birthDate);
+    const requiredLogbook = getRequiredLogbookByAge(age);
+
+    if (!requiredLogbook) return null;
+
+    const hasRequiredLogbook = user.progress?.some(
+      (item: any) =>
+        item.type === "LOGBOOK" &&
+        item.level === requiredLogbook.level
+    );
+
+    if (hasRequiredLogbook) return null;
+
+    return {
+      id: user.id,
+      name: user.name,
+      type: "LOGBOOK",
+      message: `Pendiente Bitácora ${requiredLogbook.name}`,
+    };
+  })
+  .filter(Boolean);
+
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
-      <section className="bg-emerald-800 px-8 py-10 text-white">
-        <div className="mx-auto max-w-7xl">
-          <p className="text-sm uppercase tracking-[0.3em] text-emerald-200">
-            Sistema de registro
-          </p>
-          <h1 className="mt-3 text-4xl font-bold">🏕️ Tropa Coquiva 175</h1>
-          <p className="mt-2 max-w-2xl text-emerald-100">
-            Administración de protagonistas y patrullas del grupo.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              onClick={() => setIsUserModalOpen(true)}
-              className="rounded-xl bg-white px-5 py-3 font-semibold text-emerald-800 hover:bg-emerald-50"
-            >
-              ➕ Crear Protagonista
-            </button>
-
-            <button
-              onClick={() => setIsPatrolModalOpen(true)}
-              className="rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white hover:bg-slate-800"
-            >
-              🐺 Crear Patrulla
-            </button>
-
-            <Link
-              href="/attendance"
-              className="rounded-xl bg-blue-700 px-5 py-3 font-semibold text-white hover:bg-blue-800"
-            >
-              📋 Control de Asistencia
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-6 px-8 py-8 md:grid-cols-2">
+        <>
+        <AppHeader
+          onCreateUser={() => setIsUserModalOpen(true)}
+          onCreatePatrol={() => setIsPatrolModalOpen(true)}
+        />
+      
+        
+      <section className="mx-auto grid max-w-7xl gap-6 px-8 py-8 md:grid-cols-3">
         <div className="rounded-2xl bg-white p-6 shadow-sm">
           <p className="text-sm text-slate-500">Protagonistas</p>
           <p className="mt-2 text-4xl font-bold">{users.length}</p>
@@ -195,11 +250,17 @@ export default function Home() {
           <p className="text-sm text-slate-500">Patrullas</p>
           <p className="mt-2 text-4xl font-bold">{patrols.length}</p>
         </div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <p className="text-sm text-slate-500">Recordatorios</p>
+          <p className="mt-2 text-4xl font-bold text-amber-600">
+            {reminders.length}
+          </p>
+        </div>
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-8 px-8 pb-10 lg:grid-cols-3">
 
-        <div className="rounded-2xl bg-white p-6 shadow-sm lg:col-span-3">
+        <div className="rounded-2xl bg-white p-6 shadow-sm lg:col-span-2">
           <h2 className="text-xl font-bold">Protagonistas activos</h2>
           <input
             value={searchTerm}
@@ -285,6 +346,33 @@ export default function Home() {
                 </div>
               </section>
             )}
+          </div>
+        </div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-bold">🔔 Recordatorios</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Bitácoras pendientes según edad.
+          </p>
+
+          <div className="mt-5 max-h-[520px] space-y-3 overflow-y-auto pr-2">
+            {reminders.length === 0 && (
+              <p className="rounded-xl bg-slate-100 p-4 text-sm text-slate-500">
+                No hay recordatorios pendientes.
+              </p>
+            )}
+
+            {reminders.map((reminder: any) => (
+              <Link
+                key={reminder.id}
+                href={`/users/${reminder.id}`}
+                className="block rounded-xl border border-amber-200 bg-amber-50 p-4 hover:bg-amber-100"
+              >
+                <p className="font-bold text-slate-900">{reminder.name}</p>
+                <p className="mt-1 text-sm text-amber-800">
+                  {reminder.message}
+                </p>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -477,6 +565,7 @@ export default function Home() {
           </div>
         </div>
       )}
+      </>
     </main>
   );
 }

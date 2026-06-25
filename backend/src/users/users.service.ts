@@ -30,6 +30,7 @@ findAll() {
     include: {
       section: true,
       patrol: true,
+      progress: true,
       specialties: {
         include: {
           specialty: true,
@@ -95,7 +96,7 @@ removeProgress(progressId: string) {
       where: { id },
       include: {
         patrol: true,
-
+        medicalRecord: true,
         progress: {
           orderBy: {
             obtainedDate: "asc",
@@ -148,4 +149,19 @@ updateStatus(
       data,
     });
   }
+  updateScoutCeremony(
+  id: string,
+  data: {
+    isInvested?: boolean;
+    promiseDate?: string | null;
+  },
+) {
+  return this.prisma.user.update({
+    where: { id },
+    data: {
+      isInvested: data.isInvested,
+      promiseDate: data.promiseDate ? new Date(data.promiseDate) : null,
+    },
+  });
+}
 }
