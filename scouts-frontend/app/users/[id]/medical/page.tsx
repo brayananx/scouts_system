@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import AppHeader from "../../../components/AppHeader";
 import { api } from "../../../lib/api";
+import { toast } from "sonner";
 
 export default function MedicalPage({
   params,
@@ -22,6 +23,13 @@ export default function MedicalPage({
   const [guardianName, setGuardianName] = useState("");
   const [notes, setNotes] = useState("");
   const [savedMessage, setSavedMessage] = useState("");
+
+
+  const downloadMedicalPdf = () => {
+    toast.info("🩺 Generando PDF de la ficha médica...");
+
+    window.open(`${API_URL}/medical-records/${id}/pdf`, "_blank");
+  };
 
   const loadMedicalRecord = async () => {
   const data = await api(`/medical-records/${id}`);
@@ -44,7 +52,7 @@ export default function MedicalPage({
 
   const saveMedicalRecord = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    try {
     await api(`/medical-records/${id}`, {
       method: "PUT",
       body: JSON.stringify({
@@ -58,8 +66,10 @@ export default function MedicalPage({
         notes,
       }),
     });
-
-    setSavedMessage("Ficha médica guardada correctamente");
+    toast.success("🩺 Ficha médica actualizada correctamente");
+    } catch (error: any) {
+      toast.error(error.message || "No fue posible actualizar la ficha médica.");
+    }
   };
 
   return (
@@ -74,13 +84,12 @@ export default function MedicalPage({
           ← Volver al perfil
         </Link>
 
-        <a
-          href={`${API_URL}/medical-records/${id}/pdf`}
-          target="_blank"
+        <button
+          onClick={downloadMedicalPdf}
           className="ml-3 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
         >
           📄 Descargar ficha médica
-        </a>
+        </button>
 
         <section className="mt-6 rounded-2xl bg-white p-8 shadow-sm">
           <h1 className="text-3xl font-bold">🩺 Ficha Médica</h1>

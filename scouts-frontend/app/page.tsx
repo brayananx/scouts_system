@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AppHeader from "./components/AppHeader";
 import { api } from "./lib/api";
+import { toast } from "sonner";
 
 export default function Home() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -18,13 +19,25 @@ export default function Home() {
   const [isPatrolModalOpen, setIsPatrolModalOpen] = useState(false);
   const [isNewMenuOpen, setIsNewMenuOpen] = useState(false);
 
+  const [isEditPatrolOpen, setIsEditPatrolOpen] = useState(false);
+  const [editPatrolName, setEditPatrolName] = useState("");
+  const [selectedPatrol, setSelectedPatrol] = useState<any>(null);
+
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState("MALE");
+  const [religion, setReligion] = useState("");
+  const [nationality, setNationality] = useState("");
+  const [address, setAddress] = useState("");
   const [identityNumber, setIdentityNumber] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [joinDate, setJoinDate] = useState("");
   const [patrolName, setPatrolName] = useState("");
-
+  const getRoleName = (role?: string) => {
+    if (role === "guide") return "Guía";
+    if (role === "subguide") return "Subguía";
+    return "";
+  };
   const [searchTerm, setSearchTerm] = useState("");
 
   const loadSections = async () => {
@@ -35,6 +48,12 @@ export default function Home() {
     setSections([]);
   }
 };
+
+  const openEditPatrol = (patrol: any) => {
+    setSelectedPatrol(patrol);
+    setEditPatrolName(patrol.name);
+    setIsEditPatrolOpen(true);
+  };
 
 const loadUsers = async () => {
   try {
@@ -69,23 +88,35 @@ const loadPatrols = async () => {
   const createUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || !email.trim() || !identityNumber.trim()) return;
+    if (!name.trim() || !phone.trim() || !identityNumber.trim()) return;
 
-    await api("/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        email,
-        identityNumber,
-        birthDate: birthDate || undefined,
-        joinDate: joinDate || undefined,
-        role: "scout",
-      }),
+    try {
+
+      await api("/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          phone,
+          gender,
+          religion,
+          nationality,
+          address,
+          identityNumber,
+          birthDate: birthDate || undefined,
+          joinDate: joinDate || undefined,
+          role: "scout",
+        }),
     });
 
+    toast.success("⚜️ Protagonista registrado correctamente");
+
     setName("");
-    setEmail("");
+    setPhone("");
+    setGender("MALE");
+    setReligion("");
+    setNationality("");
+    setAddress("");
     setIdentityNumber("");
     setBirthDate("");
     setJoinDate("");
@@ -93,7 +124,10 @@ const loadPatrols = async () => {
 
     loadUsers();
     loadSections();
-  };
+  } catch (error: any) {
+    toast.error(error.message || "No fue posible registrar el protagonista.");
+  }
+};
 
   const createPatrol = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,35 +158,34 @@ const loadPatrols = async () => {
     loadPatrols();
   };
 
-  const deletePatrol = async (id: string) => {
-    const confirmDelete = confirm("¿Seguro que deseas eliminar esta patrulla?");
+  const deletePatrol = async (patrolId: string) => {
+      const confirmed = window.confirm(
+        "¿Seguro que querés eliminar esta patrulla?"
+      );
 
-    if (!confirmDelete) return;
+      if (!confirmed) return;
 
-    const res = await api(`/patrols/${id}`, {
-      method: "DELETE",
-    });
+      try {
+        await api(`/patrols/${patrolId}`, {
+          method: "DELETE",
+        });
 
-    if (!res.ok) {
-      const error = await res.json();
-
-      alert(error.message || "No se pudo eliminar la patrulla.");
-      return;
-    }
-
-    loadPatrols();
-  };
+        toast.success("🐺 Patrulla eliminada correctamente");
+        loadPatrols();
+      } catch (error: any) {
+        toast.error(error.message || "No se pudo eliminar la patrulla.");
+      }
+    };
     const filteredUsers = users.filter((u: any) => {
-    const search = searchTerm.toLowerCase();
-    
+  const search = searchTerm.toLowerCase();
 
-    return (
-      u.name?.toLowerCase().includes(search) ||
-      u.email?.toLowerCase().includes(search) ||
-      u.identityNumber?.toLowerCase().includes(search) ||
-      u.patrol?.name?.toLowerCase().includes(search)
-    );
-  });
+  return (
+    u.name?.toLowerCase().includes(search) ||
+    u.phone?.toLowerCase().includes(search) ||
+    u.identityNumber?.toLowerCase().includes(search) ||
+    u.patrol?.name?.toLowerCase().includes(search)
+  );
+});
 
   const activeUsers = filteredUsers.filter((u: any) => u.isActive !== false);
   const inactiveUsers = filteredUsers.filter((u: any) => u.isActive === false);
@@ -283,18 +316,34 @@ const reminders = activeUsers
               >
                 <div>
                   <p className="text-lg font-bold">{u.name}</p>
-                  <p className="text-sm text-slate-500">{u.email}</p>
+
                   <p className="text-sm text-slate-500">
-                    ID: {u.identityNumber || "Sin identidad"}
+                    📞 {u.phone || "Sin teléfono"}
+                  </p>
+
+                  <p className="text-sm text-slate-500">
+                    🪪 {u.identityNumber || "Sin identificación"}
                   </p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                      {u.role}
-                    </span>
+                    {u.role !== "scout" && (
+                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                        {getRoleName(u.role)}
+                      </span>
+                    )}
 
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                       {u.patrol?.name || "Sin patrulla"}
+                    </span>
+
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        u.isActive === false
+                          ? "bg-red-100 text-red-700"
+                          : "bg-green-100 text-green-700"
+                      }`}
+                    >
+                      {u.isActive === false ? "Inactivo" : "Activo"}
                     </span>
                   </div>
                 </div>
@@ -322,9 +371,13 @@ const reminders = activeUsers
                       >
                         <div>
                           <p className="text-lg font-bold">{u.name}</p>
-                          <p className="text-sm text-slate-500">{u.email}</p>
+
                           <p className="text-sm text-slate-500">
-                            ID: {u.identityNumber || "Sin identidad"}
+                            📞 {u.phone || "Sin teléfono"}
+                          </p>
+
+                          <p className="text-sm text-slate-500">
+                            🪪 {u.identityNumber || "Sin identificación"}
                           </p>
 
                           {u.inactiveReason && (
@@ -402,13 +455,21 @@ const reminders = activeUsers
                       Integrantes: {p.users?.length || 0}
                     </p>
                   </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openEditPatrol(p)}
+                      className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                    >
+                      ✏️ Editar
+                    </button>
 
-                  <button
-                    onClick={() => deletePatrol(p.id)}
-                    className="rounded-xl bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
-                  >
-                    Eliminar
-                  </button>
+                    <button
+                      onClick={() => deletePatrol(p.id)}
+                      className="rounded-xl bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  </div>
                 </div>
 
                 {p.users?.length > 0 && (
@@ -463,16 +524,47 @@ const reminders = activeUsers
 
               <input
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600"
-                placeholder="Correo electrónico"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Número de identidad"
+                value={identityNumber}
+                onChange={(e) => setIdentityNumber(e.target.value)}
               />
 
               <input
                 className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600"
-                placeholder="Número de identidad"
-                value={identityNumber}
-                onChange={(e) => setIdentityNumber(e.target.value)}
+                placeholder="Número de teléfono"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900"
+              >
+                <option value="MALE">Masculino</option>
+                <option value="FEMALE">Femenino</option>
+                <option value="OTHER">Otro</option>
+              </select>
+
+              <input
+                value={nationality}
+                onChange={(e) => setNationality(e.target.value)}
+                placeholder="Nacionalidad"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900"
+              />
+
+              <input
+                value={religion}
+                onChange={(e) => setReligion(e.target.value)}
+                placeholder="Religión"
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900"
+              />
+
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Dirección"
+                className="min-h-24 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900"
               />
 
               <div>
@@ -559,6 +651,70 @@ const reminders = activeUsers
                   className="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white hover:bg-slate-800"
                 >
                   Guardar patrulla
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {isEditPatrolOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold">Editar patrulla</h2>
+
+              <button
+                onClick={() => setIsEditPatrolOpen(false)}
+                className="rounded-full bg-slate-100 px-3 py-1 text-sm hover:bg-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+
+                if (!editPatrolName.trim() || !selectedPatrol) return;
+
+                try {
+                  await api(`/patrols/${selectedPatrol.id}`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ name: editPatrolName }),
+                  });
+
+                  toast.success("🐺 Patrulla actualizada correctamente");
+                  setIsEditPatrolOpen(false);
+                  setSelectedPatrol(null);
+                  setEditPatrolName("");
+                  loadPatrols();
+                } catch (error: any) {
+                  toast.error(error.message || "No se pudo actualizar la patrulla.");
+                }
+              }}
+              className="mt-6 space-y-4"
+            >
+              <input
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600"
+                placeholder="Nombre de patrulla"
+                value={editPatrolName}
+                onChange={(e) => setEditPatrolName(e.target.value)}
+              />
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditPatrolOpen(false)}
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3 font-semibold hover:bg-slate-100"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  className="w-full rounded-xl bg-blue-700 px-4 py-3 font-semibold text-white hover:bg-blue-800"
+                >
+                  Guardar cambios
                 </button>
               </div>
             </form>

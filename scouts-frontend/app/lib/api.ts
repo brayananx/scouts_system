@@ -19,6 +19,9 @@ export async function api(path: string, options: RequestInit = {}) {
     headers,
   });
 
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+
   if (res.status === 401) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
@@ -29,9 +32,9 @@ export async function api(path: string, options: RequestInit = {}) {
     throw new Error("No autorizado");
   }
 
-  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(data?.message || "Ocurrió un error");
+  }
 
-  if (!text) return null;
-
-  return JSON.parse(text);
+  return data;
 }
