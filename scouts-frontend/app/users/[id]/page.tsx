@@ -34,6 +34,20 @@ export default function UserProfile({
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
   const [specialtyDate, setSpecialtyDate] = useState("");
 
+  const deleteUser = async () => {
+      const confirmed = window.confirm(
+        "¿Seguro que querés borrar este protagonista? Esto eliminará su ficha médica, progresión, especialidades y asistencia."
+      );
+
+      if (!confirmed) return;
+
+      await api(`/users/${id}`, {
+        method: "DELETE",
+      });
+
+      window.location.href = "/";
+    };
+
   const loadUser = async () => {
   const data = await api(`/users/${id}`);
 
@@ -426,6 +440,12 @@ export default function UserProfile({
               className="mt-4 rounded-xl bg-emerald-700 px-4 py-3 font-semibold text-white hover:bg-emerald-800"
             >
               Guardar promesa
+            </button>
+            <button
+              onClick={deleteUser}
+              className="rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800"
+            >
+              🗑️ Borrar protagonista
             </button>
 
             <div className="rounded-xl bg-emerald-100 p-4 md:col-span-2">

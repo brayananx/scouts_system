@@ -118,6 +118,30 @@ removeProgress(progressId: string) {
   });
 }
 
+async remove(id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.medicalRecord.deleteMany({
+        where: { userId: id },
+      });
+
+      await tx.progressHistory.deleteMany({
+        where: { userId: id },
+      });
+
+      await tx.userSpecialty.deleteMany({
+        where: { userId: id },
+      });
+
+      await tx.attendance.deleteMany({
+        where: { userId: id },
+      });
+
+      return tx.user.delete({
+        where: { id },
+      });
+    });
+  }
+
 updateStatus(
     id: string,
     data: {

@@ -65,6 +65,11 @@ export class UsersController {
     return this.usersService.removeProgress(progressId);
   }
 
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
+  }
+
   @Get(':id/history')
   getHistory(@Param('id') id: string) {
     return this.usersService.getHistoryData(id);
