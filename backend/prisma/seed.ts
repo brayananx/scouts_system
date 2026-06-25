@@ -37,20 +37,22 @@ async function main() {
 
   console.log(`✅ ${files.length} especialidades cargadas correctamente`);
 
-  const password = await bcrypt.hash("admin123", 10);
+  const password = await bcrypt.hash("coquiva175", 10);
 
   await prisma.systemUser.upsert({
-    where: { email: "admin@coquiva.com" },
-    update: {},
+    where: { username: "admin" },
+    update: {
+      password,
+    },
     create: {
       name: "Administrador",
-      email: "admin@coquiva.com",
+      username: "admin",
       password,
       role: "ADMIN",
     },
   });
 
-  console.log("✅ Usuario admin creado");
+  console.log("✅ Usuario administrador creado");
 }
 
 main()

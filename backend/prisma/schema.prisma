@@ -10,7 +10,7 @@ datasource db {
 model SystemUser {
   id        String   @id @default(uuid())
   name      String
-  email     String   @unique
+  username  String?  @unique
   password  String
   role      String   @default("ADMIN")
   createdAt DateTime @default(now())
