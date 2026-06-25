@@ -88,7 +88,7 @@ export default function LoginPage() {
               placeholder="admin@coquiva.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none text-slate-900 placeholder:text-slate-400 focus:border-emerald-600"
             />
           </div>
 
@@ -101,7 +101,7 @@ export default function LoginPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-600"
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none text-slate-900 placeholder:text-slate-400 focus:border-emerald-600"
             />
           </div>
 
