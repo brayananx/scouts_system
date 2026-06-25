@@ -11,13 +11,13 @@ export class PatrolService {
     });
   }
   async remove(id: string) {
-    const usersCount = await this.prisma.user.count({
+    const usersInPatrol = await this.prisma.user.count({
       where: { patrolId: id },
     });
 
-    if (usersCount > 0) {
+    if (usersInPatrol > 0) {
       throw new BadRequestException(
-        'No se puede eliminar esta patrulla porque tiene usuarios asignados.',
+        "No se puede eliminar esta patrulla porque tiene protagonistas asignados."
       );
     }
 
@@ -26,6 +26,14 @@ export class PatrolService {
     });
   }
 
+  update(id: string, name: string) {
+    return this.prisma.patrol.update({
+      where: { id },
+      data: {
+        name,
+      },
+    });
+  }
   findAll() {
     return this.prisma.patrol.findMany({
       include: {

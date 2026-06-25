@@ -18,35 +18,58 @@ model SystemUser {
 
 model User {
   id    String @id @default(uuid())
-  name  String
-  email String @unique
-  role  String @default("scout")
 
-  birthDate      DateTime?
-  identityNumber String    @unique
-  joinDate       DateTime?
+  name String
+
+  identityNumber String @unique
+
+  birthDate DateTime?
+
+  gender Gender
+
+  religion String?
+
+  nationality String?
+
+  address String?
+
+  phone String
+
+  role String @default("scout")
+
+  joinDate DateTime?
 
   isInvested Boolean @default(false)
+
   promiseDate DateTime?
 
   attendance Attendance[]
 
-  compassLevel Int             @default(1)
-  logbookLevel Int             @default(1)
-  progress     UserProgress[]
-  specialties  UserSpecialty[]
+  compassLevel Int @default(1)
+  logbookLevel Int @default(1)
+
+  progress UserProgress[]
+
+  specialties UserSpecialty[]
 
   isActive Boolean @default(true)
+
   inactiveReason String?
+
   inactiveDate DateTime?
 
   medicalRecord MedicalRecord?
 
   sectionId String?
-  section   Section? @relation(fields: [sectionId], references: [id])
+  section Section? @relation(fields: [sectionId], references: [id])
 
   patrolId String?
-  patrol   Patrol? @relation(fields: [patrolId], references: [id])
+  patrol Patrol? @relation(fields: [patrolId], references: [id])
+}
+
+enum Gender {
+  MALE
+  FEMALE
 }
 
 model UserProgress {

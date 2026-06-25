@@ -197,19 +197,45 @@ export class UsersController {
       doc.moveDown(0.5);
 
       doc.fontSize(11).fillColor('#374151');
-      doc.text(`Correo: ${user.email}`, 45);
-      doc.text(`Identidad: ${user.identityNumber}`, 45);
+
+      doc.text(`Identificación: ${user.identityNumber}`, 45);
+
+      doc.text(`Teléfono: ${user.phone || 'No registrado'}`, 45);
+
+      const genderName =
+        user.gender === 'MALE'
+          ? 'Masculino'
+          : user.gender === 'FEMALE'
+            ? 'Femenino'
+            : user.gender === 'OTHER'
+              ? 'Otro'
+              : '-';
+
+      doc.text(`Género: ${genderName}`, 45);
+
+      doc.text(`Nacionalidad: ${user.nationality || 'No registrada'}`, 45);
+
+      doc.text(`Religión: ${user.religion || 'No registrada'}`, 45);
+
       doc.text(`Patrulla: ${user.patrol?.name || 'Sin patrulla'}`, 45);
+
       doc.text(
         `Fecha de nacimiento: ${
           user.birthDate ? formatDate(user.birthDate) : '-'
         }`,
         45,
       );
+
       doc.text(
-        `Fecha de ingreso: ${user.joinDate ? formatDate(user.joinDate) : '-'}`,
+        `Fecha de ingreso: ${
+          user.joinDate ? formatDate(user.joinDate) : '-'
+        }`,
         45,
       );
+
+      doc.text(`Dirección: ${user.address || 'No registrada'}`, 45);
+
+      doc.moveDown();
 
       doc.fillColor('#111827');
 
@@ -388,5 +414,9 @@ export class UsersController {
     },
   ) {
     return this.usersService.updateProgress(id, body);
+  }
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() body: any) {
+    return this.usersService.update(id, body);
   }
 }
